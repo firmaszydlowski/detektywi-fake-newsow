@@ -50,7 +50,7 @@ input[type="text"], select { width: 100%; min-height: 48px; padding: var(--s1); 
 <div class="pasek"><div><span>SP Brzana</span><span>Detektywi fake newsów</span></div></div>
 <main>
   <h1>Karta sprawdzania</h1>
-  <p>Przy każdym newsie odpowiedzcie na 3 pytania. Na koniec zaznaczcie: prawda czy fałsz.</p>
+  <p>Gdy na tablicy pojawi się news, wybierzcie jego tytuł z listy i odpowiedzcie na 3 pytania. Na koniec zaznaczcie: prawda czy fałsz.</p>
   <p class="etykieta">Który to zespół?</p>
   <div class="zespoly" id="zespoly"></div>
   <div id="praca" hidden>
@@ -80,7 +80,7 @@ const TYTULY = ["Badanie potwierdza, że nietoperze są całkowicie ślepe", "Bu
 /* Dane i reguły karty sprawdzania. Bez dostępu do strony: testy w test_logika_karty.js. */
 const NEWSOW_NA_KARCIE = 5;
 const WYMAGANE_POLA = [
-  ["tytul", "Który to news?"],
+  ["tytul", "Jaki news jest na tablicy?"],
   ["kto", "Kto to napisał?"],
   ["kiedy", "Kiedy?"],
   ["inne", "Czy inne źródła mówią to samo?"],
@@ -347,7 +347,7 @@ function listaTytulow(news, numer) {
   }));
   const lista = el("select", { id }, ...opcje);
   lista.addEventListener("change", () => zmien(news, "tytul", lista.value));
-  return el("div", { className: "pole" }, el("label", { htmlFor: id, textContent: "Który to news?" }), lista);
+  return el("div", { className: "pole" }, el("label", { htmlFor: id, textContent: "Jaki news jest na tablicy?" }), lista);
 }
 
 function wybor(news, numer, pole, pytanie, opcje) {
