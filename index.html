@@ -18,7 +18,7 @@ h1 { color: var(--blue); font-size: 30px; line-height: 1.15; margin-bottom: var(
 h2 { color: var(--blue); font-size: 22px; line-height: 1.2; margin-bottom: var(--s2); }
 .etykieta { font-weight: 700; margin: var(--s3) 0 var(--s1); }
 button { font: inherit; cursor: pointer; }
-button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--eu-blue); outline-offset: 2px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--eu-blue); outline-offset: 2px; }
 .zespoly { display: flex; flex-wrap: wrap; gap: var(--s1); }
 .zespoly button { width: 48px; height: 48px; background: #fff; color: var(--eu-blue); border: 1px solid var(--blue); font-weight: 700; }
 .zespoly button:hover { background: var(--tint); }
@@ -27,7 +27,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 #newsy { margin-top: var(--s3); }
 .pole { margin-bottom: var(--s2); }
 .pole label, legend { display: block; font-weight: 700; color: var(--eu-blue); margin-bottom: 4px; padding: 0; }
-input[type="text"] { width: 100%; min-height: 48px; padding: var(--s1); font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--mute); }
+input[type="text"], select { width: 100%; min-height: 48px; padding: var(--s1); font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--mute); }
 .wybor { border: 0; margin-bottom: var(--s2); }
 .opcja { display: inline-flex; align-items: center; gap: var(--s1); min-height: 48px; margin-right: var(--s3); cursor: pointer; }
 .opcja input { width: 24px; height: 24px; margin: 0; accent-color: var(--eu-blue); }
@@ -76,10 +76,11 @@ input[type="text"] { width: 100%; min-height: 48px; padding: var(--s1); font: in
   </div>
 </main>
 <script>
+const TYTULY = ["Badanie potwierdza, że nietoperze są całkowicie ślepe", "Bułgaria od nowego roku płaci w euro", "Całkowite zaćmienie Słońca nad Polską i Grecją 14 listopada", "Europejskimi Stolicami Kultury 2026 są Oulu i Trenczyn", "Grecja zamontuje latarnie z harfami wiatrowymi, które grają i dają prąd", "Grecki przestanie być językiem urzędowym Unii Europejskiej od 2027 roku", "Greckie monety euro przestaną być ważne poza Grecją od stycznia", "Hymn Unii Europejskiej dostał oficjalne słowa po raz pierwszy od 1985 roku", "Igrzyska Olimpijskie 2028 przeniesione z Los Angeles do Aten", "Język irlandzki dołączył do pełnej listy języków urzędowych UE", "Koniec roamingu bez dopłat w UE od 1 stycznia 2027 roku", "MEN przesuwa koniec roku szkolnego na 9 lipca 2027 roku", "Mechanizm z Antykithiry miał koła zębate i pokazywał ruch planet", "Mistrzostwa świata w piłce nożnej 2026 miały 48 drużyn i trzech gospodarzy", "Na Galapagos opisano nowy gatunek małej niebieskiej ośmiornicy", "Na Islandii po raz pierwszy znaleziono komary na wolności", "Na granicach strefy Schengen znikają pieczątki w paszportach", "Narciarstwo wysokogórskie zadebiutowało na zimowych igrzyskach", "Naukowcy: ośmiornice mają pięć serc, a nie trzy", "Nazwa „feta” jest w UE zarezerwowana dla sera z Grecji", "ROBAKI W KAŻDYM CHLEBIE! Unia wydała nowy nakaz", "Rogal świętomarciński ma w UE chronioną nazwę", "Rok 2025 był najchłodniejszy od pół wieku, podaje europejski instytut", "Sonda Voyager 1 będzie o dobę świetlną od Ziemi", "Statki wycieczkowe płacą 20 euro za pasażera przy Santorini i Mykonos", "Tylko raz w życiu! 27 sierpnia Mars będzie wielki jak Księżyc", "UE wycofuje ładowarki USB-C, telefony dostaną nowe złącze od 2027 roku", "UE zabroni uprawy warzyw i owoców w przydomowych ogródkach", "UE zabroniła dzieciom poniżej 8 lat nadmuchiwać balony", "UNESCO wpisało na listę dziedzictwa całą kuchnię włoską", "UWAGA! Od soboty WhatsApp będzie płatny, prześlij to do 10 osób", "Unia Europejska chce zakazać papieru toaletowego i zastąpić go słomą", "W całej UE telefony i tablety mają ten sam port ładowania", "W greckiej świątyni z VI wieku p.n.e. znaleziono brąz z napisem", "W greckim Epirze można zobaczyć naturalne złudzenie optyczne w kształcie spirali", "W polskich podstawówkach od września 2026 obowiązuje zakaz telefonów", "Wielki Mur Chiński to jedyna budowla widoczna gołym okiem z Księżyca", "Wombaty robią kupy w kształcie kostek", "Załoga Artemis II poleciała dalej od Ziemi niż ktokolwiek wcześniej", "Łazik Perseverance znalazł na Marsie skałę w „cętki lamparta”"];
 /* Dane i reguły karty sprawdzania. Bez dostępu do strony: testy w test_logika_karty.js. */
 const NEWSOW_NA_KARCIE = 5;
 const WYMAGANE_POLA = [
-  ["oCzym", "O czym jest?"],
+  ["tytul", "Który to news?"],
   ["kto", "Kto to napisał?"],
   ["kiedy", "Kiedy?"],
   ["inne", "Czy inne źródła mówią to samo?"],
@@ -88,7 +89,7 @@ const WYMAGANE_POLA = [
 
 function nowaKarta() {
   return Array.from({ length: NEWSOW_NA_KARCIE }, () => ({
-    oCzym: "", kto: "", kiedy: "", inne: "", gdzie: "", wynik: "",
+    tytul: "", kto: "", kiedy: "", inne: "", gdzie: "", wynik: "",
   }));
 }
 
@@ -98,6 +99,8 @@ function brakujace(karta) {
     for (const [pole, pytanie] of WYMAGANE_POLA) {
       if (!news[pole].trim()) braki.push(`News ${indeks + 1}: ${pytanie}`);
     }
+    const wczesniej = karta.slice(0, indeks).some((inny) => inny.tytul === news.tytul);
+    if (news.tytul && wczesniej) braki.push(`News ${indeks + 1}: ten tytuł jest już wybrany wyżej`);
   });
   return braki;
 }
@@ -151,7 +154,7 @@ const OBRAZ = {
 };
 const KOLUMNY = [
   { tytul: "News", szer: 70 },
-  { tytul: "O czym jest?", szer: 330, pole: "oCzym" },
+  { tytul: "Tytuł newsa", szer: 330, pole: "tytul" },
   { tytul: "Kto to napisał?", szer: 310, pole: "kto" },
   { tytul: "Kiedy?", szer: 170, pole: "kiedy" },
   { tytul: "Czy inne źródła mówią to samo?", szer: 400 },
@@ -286,7 +289,6 @@ function rysujKarte(canvas, zespol, karta) {
 const ZESPOLOW = 6;
 const KLUCZ = "brzana-karta-v1";
 const POLA_TEKSTU = [
-  ["oCzym", "O czym jest? (kilka słów)"],
   ["kto", "Kto to napisał?"],
   ["kiedy", "Kiedy?"],
 ];
@@ -334,6 +336,20 @@ function poleTekstu(news, numer, pole, etykieta) {
   return el("div", { className: "pole" }, el("label", { htmlFor: id, textContent: etykieta }), wejscie);
 }
 
+/* Te same tytuły co w generatorze newsów, po alfabecie, żeby lista nie zdradzała kolejności losowania. */
+function listaTytulow(news, numer) {
+  const id = `tytul-${numer}`;
+  const tytuly = [...TYTULY].sort((a, b) => a.localeCompare(b, "pl"));
+  const opcje = ["", ...tytuly].map((tytul) => el("option", {
+    value: tytul,
+    textContent: tytul || "Wybierzcie tytuł z listy",
+    selected: news.tytul === tytul,
+  }));
+  const lista = el("select", { id }, ...opcje);
+  lista.addEventListener("change", () => zmien(news, "tytul", lista.value));
+  return el("div", { className: "pole" }, el("label", { htmlFor: id, textContent: "Który to news?" }), lista);
+}
+
 function wybor(news, numer, pole, pytanie, opcje) {
   const pozycje = opcje.map((opcja) => {
     const radio = el("input", { type: "radio", name: `${pole}-${numer}`, value: opcja, checked: news[pole] === opcja });
@@ -347,6 +363,7 @@ function blokNewsa(news, indeks) {
   const numer = indeks + 1;
   return el("section", { className: "news" },
     el("h2", { textContent: `News ${numer}` }),
+    listaTytulow(news, numer),
     ...POLA_TEKSTU.map(([pole, etykieta]) => poleTekstu(news, numer, pole, etykieta)),
     wybor(news, numer, "inne", "Czy inne źródła mówią to samo?", ["Tak", "Nie"]),
     poleTekstu(news, numer, "gdzie", "Gdzie sprawdziliśmy?"),
