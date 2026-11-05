@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Karta sprawdzania</title>
+<style>
+:root { --blue: #007FC7; --eu-blue: #004494; --tint: #EDF6FC; --line: #C5DFF1; --ink: #14263A; --tx: #33475B; --mute: #52657A; --s1: 8px; --s2: 16px; --s3: 24px; --s4: 40px; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; color: var(--ink); font: 17px/1.45 Arial, Helvetica, sans-serif; }
+h1, h2, p, ul, ol, fieldset { margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+.pasek { background: var(--blue); color: #fff; padding: var(--s1) var(--s2); }
+.pasek div { display: flex; justify-content: space-between; gap: var(--s2); max-width: 720px; margin: 0 auto; font-weight: 700; }
+main { max-width: 720px; margin: 0 auto; padding: var(--s3) var(--s2) var(--s4); }
+h1 { color: var(--blue); font-size: 30px; line-height: 1.15; margin-bottom: var(--s1); }
+h2 { color: var(--blue); font-size: 22px; line-height: 1.2; margin-bottom: var(--s2); }
+.etykieta { font-weight: 700; margin: var(--s3) 0 var(--s1); }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--eu-blue); outline-offset: 2px; }
+.zespoly { display: flex; flex-wrap: wrap; gap: var(--s1); }
+.zespoly button { width: 48px; height: 48px; background: #fff; color: var(--eu-blue); border: 1px solid var(--blue); font-weight: 700; }
+.zespoly button:hover { background: var(--tint); }
+.zespoly button[aria-pressed="true"] { background: var(--blue); color: #fff; }
+.news { border-top: 2px solid var(--blue); padding: var(--s2) 0 var(--s3); }
+#newsy { margin-top: var(--s3); }
+.pole { margin-bottom: var(--s2); }
+.pole label, legend { display: block; font-weight: 700; color: var(--eu-blue); margin-bottom: 4px; padding: 0; }
+input[type="text"] { width: 100%; min-height: 48px; padding: var(--s1); font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--mute); }
+.wybor { border: 0; margin-bottom: var(--s2); }
+.opcja { display: inline-flex; align-items: center; gap: var(--s1); min-height: 48px; margin-right: var(--s3); cursor: pointer; }
+.opcja input { width: 24px; height: 24px; margin: 0; accent-color: var(--eu-blue); }
+.koniec { border-top: 2px solid var(--blue); padding-top: var(--s2); }
+.krok { background: var(--tint); border: 1px solid var(--line); padding: var(--s2); margin-bottom: var(--s2); }
+.krok p { margin-bottom: var(--s1); }
+.przycisk { display: inline-block; background: var(--eu-blue); color: #fff; border: 0; padding: 12px var(--s3); font-weight: 700; text-decoration: none; }
+.przycisk:hover { background: var(--blue); }
+#komunikat { margin-bottom: var(--s2); }
+#komunikat:empty { display: none; }
+#komunikat ul { padding-left: var(--s3); margin-top: 4px; }
+#komunikat:focus { outline: none; }
+#obraz { display: block; width: 100%; height: auto; margin-top: var(--s1); border: 1px solid var(--line); }
+.boczny { background: none; border: 0; color: var(--mute); text-decoration: underline; padding: 0; }
+.mala { color: var(--mute); font-size: 15px; }
+.podpowiedz { margin-top: var(--s2); }
+</style>
+</head>
+<body>
+<div class="pasek"><div><span>SP Brzana</span><span>Detektywi fake newsów</span></div></div>
+<main>
+  <h1>Karta sprawdzania</h1>
+  <p>Przy każdym newsie odpowiedzcie na 3 pytania. Na koniec zaznaczcie: prawda czy fałsz.</p>
+  <p class="etykieta">Który to zespół?</p>
+  <div class="zespoly" id="zespoly"></div>
+  <div id="praca" hidden>
+    <div id="newsy"></div>
+    <section class="koniec">
+      <h2>Zapiszcie i wyślijcie</h2>
+      <div id="komunikat" tabindex="-1" role="status"></div>
+      <div class="krok">
+        <p><b>1. Zapiszcie kartę.</b> Na urządzenie pobierze się plik <b id="nazwa-pliku"></b>.</p>
+        <button class="przycisk" id="zapisz" type="button">Zapisz kartę</button>
+        <div id="podglad" hidden>
+          <p class="mala podpowiedz">Jeśli plik się nie pobrał, przytrzymajcie obrazek i wybierzcie zapisanie albo otwórzcie tę stronę w Safari lub Chrome.</p>
+          <img id="obraz" alt="Wypełniona karta sprawdzania">
+        </div>
+      </div>
+      <div class="krok">
+        <p><b>2. Wyślijcie plik na Dropbox.</b> Wybierzcie zapisany plik. Konto nie jest potrzebne. Jeśli Dropbox zapyta o imię i e-mail, wpiszcie nazwę zespołu i e-mail opiekuna.</p>
+        <a class="przycisk" href="https://www.dropbox.com/request/wsglmkk8eds9pccqdp5x" target="_blank" rel="noopener noreferrer">Wyślij na Dropbox</a>
+      </div>
+      <p class="mala">Odpowiedzi zapisują się na bieżąco na tym urządzeniu.</p>
+      <button class="boczny mala" id="wyczysc" type="button">Wyczyść kartę tego zespołu</button>
+    </section>
+  </div>
+</main>
+<script>
+/* Dane i reguły karty sprawdzania. Bez dostępu do strony: testy w test_logika_karty.js. */
+const NEWSOW_NA_KARCIE = 5;
+const WYMAGANE_POLA = [
+  ["oCzym", "O czym jest?"],
+  ["kto", "Kto to napisał?"],
+  ["kiedy", "Kiedy?"],
+  ["inne", "Czy inne źródła mówią to samo?"],
+  ["wynik", "Prawda czy fałsz?"],
+];
+
+function nowaKarta() {
+  return Array.from({ length: NEWSOW_NA_KARCIE }, () => ({
+    oCzym: "", kto: "", kiedy: "", inne: "", gdzie: "", wynik: "",
+  }));
+}
+
+function brakujace(karta) {
+  const braki = [];
+  karta.forEach((news, indeks) => {
+    for (const [pole, pytanie] of WYMAGANE_POLA) {
+      if (!news[pole].trim()) braki.push(`News ${indeks + 1}: ${pytanie}`);
+    }
+  });
+  return braki;
+}
+
+function nazwaPliku(zespol) {
+  return `${zespol}_Detektywi fake newsów.png`;
+}
+
+/* Tnie słowo dłuższe niż kolumna, np. adres strony, na kawałki mieszczące się w szerokości. */
+function potnijSlowo(slowo, szerokosc, mierz) {
+  const kawalki = [];
+  let biezacy = "";
+  for (const znak of slowo) {
+    if (biezacy && mierz(biezacy + znak) > szerokosc) {
+      kawalki.push(biezacy);
+      biezacy = "";
+    }
+    biezacy += znak;
+  }
+  kawalki.push(biezacy);
+  return kawalki;
+}
+
+function zawijaj(tekst, szerokosc, mierz) {
+  const linie = [];
+  let linia = "";
+  for (const slowo of tekst.trim().split(/\s+/).filter(Boolean)) {
+    for (const kawalek of potnijSlowo(slowo, szerokosc, mierz)) {
+      const proba = linia ? `${linia} ${kawalek}` : kawalek;
+      if (mierz(proba) <= szerokosc) {
+        linia = proba;
+      } else {
+        linie.push(linia);
+        linia = kawalek;
+      }
+    }
+  }
+  if (linia) linie.push(linia);
+  return linie;
+}
+
+if (typeof module !== "undefined") {
+  module.exports = { NEWSOW_NA_KARCIE, nowaKarta, brakujace, nazwaPliku, zawijaj };
+}
+
+/* Rysuje wypełnioną kartę na płótnie, układem zgodnym z wersją do druku. */
+const OBRAZ = {
+  szerokosc: 1600, margines: 40, odstepLinii: 30, wysokoscMin: 124, pad: 14,
+  kolory: { blue: "#007FC7", euBlue: "#004494", line: "#C5DFF1", ink: "#14263A", tx: "#33475B" },
+  czcionka: "Arial, Helvetica, sans-serif",
+};
+const KOLUMNY = [
+  { tytul: "News", szer: 70 },
+  { tytul: "O czym jest?", szer: 330, pole: "oCzym" },
+  { tytul: "Kto to napisał?", szer: 310, pole: "kto" },
+  { tytul: "Kiedy?", szer: 170, pole: "kiedy" },
+  { tytul: "Czy inne źródła mówią to samo?", szer: 400 },
+  { tytul: "Prawda czy fałsz?", szer: 240 },
+];
+
+function ustawCzcionke(ctx, rozmiar, gruba = false) {
+  ctx.font = `${gruba ? "700 " : ""}${rozmiar}px ${OBRAZ.czcionka}`;
+}
+
+function tekstKolumny(news, kolumna) {
+  if (kolumna.pole) return news[kolumna.pole];
+  return news.gdzie.trim() ? `Gdzie: ${news.gdzie}` : "";
+}
+
+function wysokoscWiersza(ctx, news) {
+  ustawCzcionke(ctx, 23);
+  const mierz = (tekst) => ctx.measureText(tekst).width;
+  let wysokosc = OBRAZ.wysokoscMin;
+  for (const kolumna of KOLUMNY) {
+    const tekst = tekstKolumny(news, kolumna);
+    if (kolumna.tytul === "News" || kolumna.tytul === "Prawda czy fałsz?") continue;
+    const linie = zawijaj(tekst, kolumna.szer - 2 * OBRAZ.pad, mierz).length;
+    const naglowek = kolumna.pole ? 0 : 48;
+    wysokosc = Math.max(wysokosc, naglowek + linie * OBRAZ.odstepLinii + 2 * OBRAZ.pad);
+  }
+  return wysokosc;
+}
+
+function rysujPasekINaglowek(ctx, zespol) {
+  const { kolory, szerokosc, margines } = OBRAZ;
+  ctx.fillStyle = kolory.blue;
+  ctx.fillRect(margines, 30, szerokosc - 2 * margines, 60);
+  ctx.fillStyle = "#fff";
+  ustawCzcionke(ctx, 26, true);
+  ctx.fillText("SP Brzana", margines + 20, 69);
+  ustawCzcionke(ctx, 22);
+  const prawy = `Detektywi fake newsów · Zespół ${zespol}`;
+  ctx.fillText(prawy, szerokosc - margines - 20 - ctx.measureText(prawy).width, 68);
+  ctx.fillStyle = kolory.blue;
+  ustawCzcionke(ctx, 38, true);
+  ctx.fillText(`Karta sprawdzania, zespół ${zespol}`, margines, 142);
+}
+
+function rysujTytulyKolumn(ctx, gora) {
+  let x = OBRAZ.margines;
+  ctx.fillStyle = OBRAZ.kolory.euBlue;
+  ustawCzcionke(ctx, 19, true);
+  for (const kolumna of KOLUMNY) {
+    ctx.fillText(kolumna.tytul, x + 6, gora);
+    x += kolumna.szer;
+  }
+  ctx.strokeStyle = OBRAZ.kolory.blue;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(OBRAZ.margines, gora + 12, OBRAZ.szerokosc - 2 * OBRAZ.margines, 0);
+}
+
+function rysujPole(ctx, x, y, etykieta, zaznaczone) {
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = OBRAZ.kolory.ink;
+  ctx.strokeRect(x, y, 24, 24);
+  if (zaznaczone) {
+    ctx.strokeStyle = OBRAZ.kolory.euBlue;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x + 4, y + 13);
+    ctx.lineTo(x + 10, y + 20);
+    ctx.lineTo(x + 21, y + 5);
+    ctx.stroke();
+  }
+  ctx.fillStyle = OBRAZ.kolory.ink;
+  ustawCzcionke(ctx, 23);
+  ctx.fillText(etykieta, x + 33, y + 20);
+}
+
+function rysujTekst(ctx, tekst, x, y, szerokosc) {
+  ustawCzcionke(ctx, 23);
+  ctx.fillStyle = OBRAZ.kolory.ink;
+  const mierz = (t) => ctx.measureText(t).width;
+  zawijaj(tekst, szerokosc, mierz).forEach((linia, i) => {
+    ctx.fillText(linia, x, y + (i + 1) * OBRAZ.odstepLinii - 6);
+  });
+}
+
+function rysujKomorke(ctx, kolumna, indeks, news, x, gora) {
+  const { pad } = OBRAZ;
+  if (kolumna.tytul === "News") {
+    ctx.fillStyle = OBRAZ.kolory.blue;
+    ustawCzcionke(ctx, 32, true);
+    ctx.fillText(String(indeks + 1), x + 24, gora + 46);
+  } else if (kolumna.tytul === "Prawda czy fałsz?") {
+    rysujPole(ctx, x + pad, gora + pad, "Prawda", news.wynik === "Prawda");
+    rysujPole(ctx, x + pad, gora + pad + 40, "Fałsz", news.wynik === "Fałsz");
+  } else if (kolumna.pole) {
+    rysujTekst(ctx, news[kolumna.pole], x + pad, gora + pad, kolumna.szer - 2 * pad);
+  } else {
+    rysujPole(ctx, x + pad, gora + pad, "Tak", news.inne === "Tak");
+    rysujPole(ctx, x + pad + 110, gora + pad, "Nie", news.inne === "Nie");
+    rysujTekst(ctx, tekstKolumny(news, kolumna), x + pad, gora + pad + 34, kolumna.szer - 2 * pad);
+  }
+}
+
+function rysujWiersz(ctx, news, indeks, gora, wysokosc) {
+  let x = OBRAZ.margines;
+  for (const kolumna of KOLUMNY) {
+    ctx.strokeStyle = OBRAZ.kolory.line;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, gora, kolumna.szer, wysokosc);
+    rysujKomorke(ctx, kolumna, indeks, news, x, gora);
+    x += kolumna.szer;
+  }
+}
+
+function rysujKarte(canvas, zespol, karta) {
+  const ctx = canvas.getContext("2d");
+  const wysokosci = karta.map((news) => wysokoscWiersza(ctx, news));
+  const naglowek = 215;
+  canvas.width = OBRAZ.szerokosc;
+  canvas.height = naglowek + wysokosci.reduce((suma, h) => suma + h, 0) + 40;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  rysujPasekINaglowek(ctx, zespol);
+  rysujTytulyKolumn(ctx, 195);
+  let gora = naglowek;
+  karta.forEach((news, indeks) => {
+    rysujWiersz(ctx, news, indeks, gora, wysokosci[indeks]);
+    gora += wysokosci[indeks];
+  });
+}
+
+/* Formularz karty: wybór zespołu, zapis odpowiedzi na urządzeniu, plik PNG i przejście do Dropboxa. */
+const ZESPOLOW = 6;
+const KLUCZ = "brzana-karta-v1";
+const POLA_TEKSTU = [
+  ["oCzym", "O czym jest? (kilka słów)"],
+  ["kto", "Kto to napisał?"],
+  ["kiedy", "Kiedy?"],
+];
+
+function wczytaj() {
+  const pusty = { zespol: null, karty: {} };
+  try {
+    return JSON.parse(localStorage.getItem(KLUCZ)) || pusty;
+  } catch (blad) {
+    console.warn("Nie udało się wczytać karty", blad);
+    return pusty;
+  }
+}
+
+const stan = wczytaj();
+
+function zapisz() {
+  try {
+    localStorage.setItem(KLUCZ, JSON.stringify(stan));
+  } catch (blad) {
+    console.warn("Nie udało się zapisać odpowiedzi", blad);
+  }
+}
+
+function biezacaKarta() {
+  stan.karty[stan.zespol] = stan.karty[stan.zespol] || nowaKarta();
+  return stan.karty[stan.zespol];
+}
+
+function el(tag, wlasciwosci = {}, ...dzieci) {
+  const wezel = Object.assign(document.createElement(tag), wlasciwosci);
+  wezel.append(...dzieci);
+  return wezel;
+}
+
+function zmien(news, pole, wartosc) {
+  news[pole] = wartosc;
+  zapisz();
+}
+
+function poleTekstu(news, numer, pole, etykieta) {
+  const id = `${pole}-${numer}`;
+  const wejscie = el("input", { id, type: "text", maxLength: 200, value: news[pole] });
+  wejscie.addEventListener("input", () => zmien(news, pole, wejscie.value));
+  return el("div", { className: "pole" }, el("label", { htmlFor: id, textContent: etykieta }), wejscie);
+}
+
+function wybor(news, numer, pole, pytanie, opcje) {
+  const pozycje = opcje.map((opcja) => {
+    const radio = el("input", { type: "radio", name: `${pole}-${numer}`, value: opcja, checked: news[pole] === opcja });
+    radio.addEventListener("change", () => zmien(news, pole, opcja));
+    return el("label", { className: "opcja" }, radio, document.createTextNode(opcja));
+  });
+  return el("fieldset", { className: "wybor" }, el("legend", { textContent: pytanie }), ...pozycje);
+}
+
+function blokNewsa(news, indeks) {
+  const numer = indeks + 1;
+  return el("section", { className: "news" },
+    el("h2", { textContent: `News ${numer}` }),
+    ...POLA_TEKSTU.map(([pole, etykieta]) => poleTekstu(news, numer, pole, etykieta)),
+    wybor(news, numer, "inne", "Czy inne źródła mówią to samo?", ["Tak", "Nie"]),
+    poleTekstu(news, numer, "gdzie", "Gdzie sprawdziliśmy?"),
+    wybor(news, numer, "wynik", "Prawda czy fałsz?", ["Prawda", "Fałsz"]));
+}
+
+function rysujZespoly() {
+  const przyciski = Array.from({ length: ZESPOLOW }, (_, i) => {
+    const zespol = i + 1;
+    const przycisk = el("button", { type: "button", textContent: String(zespol) });
+    przycisk.setAttribute("aria-pressed", String(stan.zespol === zespol));
+    przycisk.setAttribute("aria-label", `Zespół ${zespol}`);
+    przycisk.addEventListener("click", () => {
+      stan.zespol = zespol;
+      zapisz();
+      rysuj();
+    });
+    return przycisk;
+  });
+  document.getElementById("zespoly").replaceChildren(...przyciski);
+}
+
+function rysuj() {
+  rysujZespoly();
+  const wybrany = Boolean(stan.zespol);
+  document.getElementById("praca").hidden = !wybrany;
+  document.getElementById("komunikat").replaceChildren();
+  document.getElementById("podglad").hidden = true;
+  if (!wybrany) return;
+  document.getElementById("newsy").replaceChildren(...biezacaKarta().map(blokNewsa));
+  document.getElementById("nazwa-pliku").textContent = nazwaPliku(stan.zespol);
+}
+
+function pokazBraki(braki) {
+  const lista = el("ul", {}, ...braki.map((brak) => el("li", { textContent: brak })));
+  const naglowek = el("p", {}, el("b", { textContent: "Karta nie jest jeszcze gotowa. Uzupełnijcie:" }));
+  const pudelko = document.getElementById("komunikat");
+  pudelko.replaceChildren(naglowek, lista);
+  pudelko.focus();
+}
+
+function pobierz(blob) {
+  const adres = URL.createObjectURL(blob);
+  const link = el("a", { href: adres, download: nazwaPliku(stan.zespol) });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  document.getElementById("obraz").src = adres;
+  document.getElementById("podglad").hidden = false;
+  document.getElementById("komunikat").replaceChildren(el("p", {},
+    el("b", { textContent: "Zapisane. " }), "Teraz wyślijcie plik na Dropbox."));
+}
+
+function zapiszObraz() {
+  const karta = biezacaKarta();
+  const braki = brakujace(karta);
+  if (braki.length) {
+    pokazBraki(braki);
+    return;
+  }
+  const canvas = document.createElement("canvas");
+  rysujKarte(canvas, stan.zespol, karta);
+  canvas.toBlob(pobierz, "image/png");
+}
+
+function wyczysc() {
+  if (!confirm(`Usunąć wszystkie odpowiedzi zespołu ${stan.zespol}?`)) return;
+  stan.karty[stan.zespol] = nowaKarta();
+  zapisz();
+  rysuj();
+}
+
+document.getElementById("zapisz").addEventListener("click", zapiszObraz);
+document.getElementById("wyczysc").addEventListener("click", wyczysc);
+rysuj();
+
+</script>
+</body>
+</html>
