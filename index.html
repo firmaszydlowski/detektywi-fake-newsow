@@ -44,6 +44,7 @@ input[type="text"], select { width: 100%; min-height: 48px; padding: var(--s1); 
 .boczny { background: none; border: 0; color: var(--mute); text-decoration: underline; padding: 0; }
 .mala { color: var(--mute); font-size: 15px; }
 .podpowiedz { margin-top: var(--s2); }
+#tekst { display: block; width: 100%; margin-bottom: var(--s1); padding: var(--s1); font: 16px/1.4 Arial, Helvetica, sans-serif; color: var(--ink); background: #fff; border: 1px solid var(--mute); }
 </style>
 </head>
 <body>
@@ -59,11 +60,17 @@ input[type="text"], select { width: 100%; min-height: 48px; padding: var(--s1); 
       <h2>Zapiszcie i wyślijcie</h2>
       <div id="komunikat" tabindex="-1" role="status"></div>
       <div class="krok">
-        <p><b>1. Zapiszcie kartę.</b> Na urządzenie pobierze się plik <b id="nazwa-pliku"></b>.</p>
+        <p><b>1. Zapiszcie kartę.</b> Na urządzenie powinien pobrać się plik <b id="nazwa-pliku"></b>.</p>
         <button class="przycisk" id="zapisz" type="button">Zapisz kartę</button>
         <div id="podglad" hidden>
-          <p class="mala podpowiedz">Jeśli plik się nie pobrał, przytrzymajcie obrazek i wybierzcie zapisanie albo otwórzcie tę stronę w Safari lub Chrome.</p>
+          <p class="podpowiedz"><b>Pliku nie ma w pobranych?</b> Wystarczy jeden z tych sposobów:</p>
+          <button class="przycisk" id="udostepnij" type="button" hidden>Udostępnij plik</button>
+          <p class="podpowiedz"><b>Obrazek karty:</b> przytrzymajcie go palcem i wybierzcie zapisanie albo zróbcie zrzut ekranu.</p>
           <img id="obraz" alt="Wypełniona karta sprawdzania">
+          <p class="podpowiedz"><b>Tekst odpowiedzi:</b> skopiujcie go i wyślijcie opiekunowi w wiadomości.</p>
+          <textarea id="tekst" rows="10" readonly aria-label="Tekst odpowiedzi"></textarea>
+          <button class="przycisk" id="kopiuj" type="button">Kopiuj tekst</button>
+          <p class="mala" id="skopiowano" role="status"></p>
         </div>
       </div>
       <div class="krok">
@@ -105,6 +112,25 @@ function brakujace(karta) {
   return braki;
 }
 
+/* Karta zapisana przez starszą wersję strony może nie mieć wszystkich pól. */
+function uzupelnijKarte(karta) {
+  return nowaKarta().map((pusty, indeks) => ({ ...pusty, ...(karta[indeks] || {}) }));
+}
+
+function tekstKarty(zespol, karta) {
+  const newsy = karta.map((news, indeks) => {
+    const gdzie = news.gdzie.trim() ? ` (gdzie: ${news.gdzie.trim()})` : "";
+    return [
+      `News ${indeks + 1}: ${news.tytul}`,
+      `Kto to napisał: ${news.kto}`,
+      `Kiedy: ${news.kiedy}`,
+      `Inne źródła: ${news.inne}${gdzie}`,
+      `Wynik: ${news.wynik}`,
+    ].join("\n");
+  });
+  return [`Detektywi fake newsów, zespół ${zespol}`, ...newsy].join("\n\n");
+}
+
 function nazwaPliku(zespol) {
   return `${zespol}_Detektywi fake newsów.png`;
 }
@@ -143,7 +169,7 @@ function zawijaj(tekst, szerokosc, mierz) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { NEWSOW_NA_KARCIE, nowaKarta, brakujace, nazwaPliku, zawijaj };
+  module.exports = { NEWSOW_NA_KARCIE, nowaKarta, brakujace, nazwaPliku, tekstKarty, uzupelnijKarte, zawijaj };
 }
 
 /* Rysuje wypełnioną kartę na płótnie, układem zgodnym z wersją do druku. */
@@ -285,7 +311,7 @@ function rysujKarte(canvas, zespol, karta) {
   });
 }
 
-/* Formularz karty: wybór zespołu, zapis odpowiedzi na urządzeniu, plik PNG i przejście do Dropboxa. */
+/* Formularz karty: wybór zespołu, zapis odpowiedzi na urządzeniu i kilka niezależnych dróg oddania wyniku. */
 const ZESPOLOW = 6;
 const KLUCZ = "brzana-karta-v1";
 const POLA_TEKSTU = [
@@ -296,7 +322,11 @@ const POLA_TEKSTU = [
 function wczytaj() {
   const pusty = { zespol: null, karty: {} };
   try {
-    return JSON.parse(localStorage.getItem(KLUCZ)) || pusty;
+    const zapis = JSON.parse(localStorage.getItem(KLUCZ)) || pusty;
+    for (const zespol of Object.keys(zapis.karty)) {
+      zapis.karty[zespol] = uzupelnijKarte(zapis.karty[zespol]);
+    }
+    return zapis;
   } catch (blad) {
     console.warn("Nie udało się wczytać karty", blad);
     return pusty;
@@ -304,6 +334,7 @@ function wczytaj() {
 }
 
 const stan = wczytaj();
+let gotowyPlik = null;
 
 function zapisz() {
   try {
@@ -397,36 +428,79 @@ function rysuj() {
   document.getElementById("nazwa-pliku").textContent = nazwaPliku(stan.zespol);
 }
 
+/* Braki tylko ostrzegają: zespół musi móc oddać kartę nawet niepełną. */
 function pokazBraki(braki) {
+  if (!braki.length) return;
   const lista = el("ul", {}, ...braki.map((brak) => el("li", { textContent: brak })));
-  const naglowek = el("p", {}, el("b", { textContent: "Karta nie jest jeszcze gotowa. Uzupełnijcie:" }));
-  const pudelko = document.getElementById("komunikat");
-  pudelko.replaceChildren(naglowek, lista);
-  pudelko.focus();
+  document.getElementById("komunikat").replaceChildren(
+    el("p", {}, el("b", { textContent: "Na karcie brakuje odpowiedzi. Zapisujemy ją mimo to, ale sprawdźcie:" })), lista);
 }
 
-function pobierz(blob) {
+function pobierzPlik(blob) {
   const adres = URL.createObjectURL(blob);
   const link = el("a", { href: adres, download: nazwaPliku(stan.zespol) });
   document.body.append(link);
-  link.click();
+  try {
+    link.click();
+  } catch (blad) {
+    console.warn("Przeglądarka nie pobrała pliku", blad);
+  }
   link.remove();
-  document.getElementById("obraz").src = adres;
-  document.getElementById("podglad").hidden = false;
-  document.getElementById("komunikat").replaceChildren(el("p", {},
-    el("b", { textContent: "Zapisane. " }), "Teraz wyślijcie plik na Dropbox."));
 }
 
-function zapiszObraz() {
-  const karta = biezacaKarta();
-  const braki = brakujace(karta);
-  if (braki.length) {
-    pokazBraki(braki);
+function przygotujPlik(blob) {
+  if (!blob) {
+    console.warn("Przeglądarka nie utworzyła pliku karty");
     return;
   }
+  gotowyPlik = new File([blob], nazwaPliku(stan.zespol), { type: "image/png" });
+  const moznaUdostepnic = Boolean(navigator.canShare && navigator.canShare({ files: [gotowyPlik] }));
+  document.getElementById("udostepnij").hidden = !moznaUdostepnic;
+  pobierzPlik(blob);
+}
+
+function pokazObraz(zespol, karta) {
   const canvas = document.createElement("canvas");
-  rysujKarte(canvas, stan.zespol, karta);
-  canvas.toBlob(pobierz, "image/png");
+  try {
+    rysujKarte(canvas, zespol, karta);
+    document.getElementById("obraz").src = canvas.toDataURL("image/png");
+    canvas.toBlob(przygotujPlik, "image/png");
+  } catch (blad) {
+    console.warn("Nie udało się narysować karty", blad);
+  }
+}
+
+function przygotujWynik() {
+  const karta = biezacaKarta();
+  document.getElementById("komunikat").replaceChildren();
+  document.getElementById("udostepnij").hidden = true;
+  pokazBraki(brakujace(karta));
+  document.getElementById("tekst").value = tekstKarty(stan.zespol, karta);
+  document.getElementById("podglad").hidden = false;
+  pokazObraz(stan.zespol, karta);
+  document.getElementById("podglad").scrollIntoView();
+}
+
+async function udostepnij() {
+  try {
+    await navigator.share({ files: [gotowyPlik], title: "Karta sprawdzania" });
+  } catch (blad) {
+    console.warn("Udostępnianie przerwane", blad);
+  }
+}
+
+async function kopiuj() {
+  const pole = document.getElementById("tekst");
+  const potwierdzenie = document.getElementById("skopiowano");
+  pole.select();
+  try {
+    await navigator.clipboard.writeText(pole.value);
+    potwierdzenie.textContent = "Skopiowane. Wklejcie to w wiadomości do opiekuna.";
+  } catch (blad) {
+    console.warn("Schowek niedostępny", blad);
+    const udalo = document.execCommand("copy");
+    potwierdzenie.textContent = udalo ? "Skopiowane. Wklejcie to w wiadomości do opiekuna." : "Tekst jest zaznaczony. Skopiujcie go ręcznie.";
+  }
 }
 
 function wyczysc() {
@@ -436,7 +510,9 @@ function wyczysc() {
   rysuj();
 }
 
-document.getElementById("zapisz").addEventListener("click", zapiszObraz);
+document.getElementById("zapisz").addEventListener("click", przygotujWynik);
+document.getElementById("udostepnij").addEventListener("click", udostepnij);
+document.getElementById("kopiuj").addEventListener("click", kopiuj);
 document.getElementById("wyczysc").addEventListener("click", wyczysc);
 rysuj();
 
